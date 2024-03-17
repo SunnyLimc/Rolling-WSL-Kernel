@@ -1,10 +1,15 @@
 [submodule "upstream-linux-stable"]
     path = upstream-linux-stable
     url = https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git
-    branch = linux-stable-rolling
+    shallow = true
+
+[submodule "upstream-linux-zen"]
+    path = upstream-linux-zen
+    url = git@github.com:zen-kernel/zen-kernel.git
     shallow = true
 
 [submodule "upstream-linux-5.15-wsl"]
     path = upstream-linux-5.15-wsl
-    url = https://github.com/microsoft/WSL2-Linux-Kernel.git
+    url = git@github.com:microsoft/WSL2-Linux-Kernel.git
     branch = linux-msft-wsl-5.15.y
+    shallow = true
