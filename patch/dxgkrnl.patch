@@ -1,0 +1,47 @@
+diff --git a/drivers/hv/dxgkrnl/Makefile b/drivers/hv/dxgkrnl/Makefile
+index 89824cda6..f30f61f76 100644
+--- a/drivers/hv/dxgkrnl/Makefile
++++ b/drivers/hv/dxgkrnl/Makefile
+@@ -2,4 +2,5 @@
+ # Makefile for the hyper-v compute device driver (dxgkrnl).
+ 
+ obj-$(CONFIG_DXGKRNL)	+= dxgkrnl.o
++ccflags-y += D_MAIN_KERNEL_
+ dxgkrnl-y := dxgmodule.o hmgr.o misc.o dxgadapter.o ioctl.o dxgvmbus.o dxgprocess.o  dxgsyncfile.o
+diff --git a/drivers/hv/dxgkrnl/dxgmodule.c b/drivers/hv/dxgkrnl/dxgmodule.c
+index 0fafb6167..5992e7176 100644
+--- a/drivers/hv/dxgkrnl/dxgmodule.c
++++ b/drivers/hv/dxgkrnl/dxgmodule.c
+@@ -803,7 +803,7 @@ static int dxg_probe_vmbus(struct hv_device *hdev,
+ 	return ret;
+ }
+ 
+-static int dxg_remove_vmbus(struct hv_device *hdev)
++static void dxg_remove_vmbus(struct hv_device *hdev)
+ {
+ 	int ret = 0;
+ 	struct dxgvgpuchannel *vgpu_channel;
+@@ -834,8 +834,6 @@ static int dxg_remove_vmbus(struct hv_device *hdev)
+ 	}
+ 
+ 	mutex_unlock(&dxgglobal->device_mutex);
+-
+-	return ret;
+ }
+ 
+ MODULE_DEVICE_TABLE(vmbus, dxg_vmbus_id_table);
+diff --git a/include/linux/uuid.h b/include/linux/uuid.h
+index 43d4a79b2..2a2deec26 100644
+--- a/include/linux/uuid.h
++++ b/include/linux/uuid.h
+@@ -107,4 +107,10 @@ extern const u8 uuid_index[16];
+ int guid_parse(const char *uuid, guid_t *u);
+ int uuid_parse(const char *uuid, uuid_t *u);
+ 
++/* backwards compatibility, don't use in new code */
++static inline int uuid_le_cmp(const guid_t u1, const guid_t u2)
++{
++	return memcmp(&u1, &u2, sizeof(guid_t));
++}
++
+ #endif

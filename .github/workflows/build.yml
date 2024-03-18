@@ -1,0 +1,84 @@
+name: Build Kernel
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # arch: [ arm64, x64 ]
+        # variant: [ generic, zen ]
+        variant: [ zen ]
+    env:
+      # will be initialized in steps
+      MSFT_FETCH_DEPTH: 
+      PATH_MSFT_TREE:
+      VERSION:
+      REPO_LINUX_TREE:
+      PATH_LINUX_TREE:
+
+    steps:
+    - name: Checkout current repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Required Env
+      run: |
+        source ./ENV
+
+    - name: Fetch Latest Version and Patch from Zen Build
+      run: |
+        source ./ENV
+        ./scripts/zen-kernel.sh
+    
+    - name: Setup Caches
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.PATH_MSFT_TREE }}
+          ${{ env.PATH_LINUX_TREE }}
+        key: kernel-repo-${{ env.VERSION }}
+
+    - name: Checkout MSFT Kernel Repository
+      uses: actions/checkout@v4
+      if: steps.cache.outputs.cache-hit != 'true'
+      with:
+        repository: 'microsoft/WSL2-Linux-Kernel'
+        fetch-depth: ${{ env.MSFT_FETCH_DEPTH }}
+        path: ${{ env.PATH_MSFT_TREE }}
+        
+    - name: Checkout Linux Kernel Repository
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        git clone --depth 1 --branch v${{ env.VERSION }} ${{ env.REPO_LINUX_TREE }} ${{ env.PATH_LINUX_TREE }}
+      
+    - name: Diff Commit From MSFT Kernel
+      run: |
+        source ./ENV
+        source ./scripts/diff-commit.sh
+        
+    - name: Patch Linux Kernel Tree
+      run: |
+        source ./ENV
+        source ./scripts/patch.sh
+        
+    - name: Build Kernel
+      run: |
+        source ./ENV
+        source ./scripts/build-kernel.sh
+      
+    - name: Cache dependencies
+      id: cachesummary
+      uses: actions/cache@v2
+      with:
+        path: |
+          summary
+        key: summary-${{ env.VERSION }}
+    
+
+    - name: Summary report
+      if: steps.cachesummary.outputs.cache-hit != 'true'
+      run: |
+        source ./ENV
+        source ./scripts/summary.sh

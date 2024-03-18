@@ -1,0 +1,24 @@
+#!/bin/bash
+export ZEN_RELEASE_URL="https://api.github.com/repos/zen-kernel/zen-kernel/releases"
+export ZEN_PATCH_PATH="$(eval echo ./zen-kernel-${VERSION})"
+
+export PATH_UCC="./commitlog"
+export PATH_UKO="./optionlog"
+export PATH_MSFT_TREE="./upstream-linux-5.15-wsl-repo"
+export PATH_LINUX_TREE="./upstream-linux-stable"
+
+export PRE_PATCH=("$(eval echo ./zen-kernel-${VERSION})")
+export ACCEPT_PATCH_CMSG=(
+  "~Merge config/wsl.*"
+  "~Merge feature/dxgkrnl.*"
+)
+export POST_PATCH=("./patch/dxgkrnl.patch")
+export MSFT_TREE_DEPTH=30
+export KCONF_PATH="$(eval echo config/config-wsl-{$_ARCH}.txt)"
+
+export REPO_LINUX_TREE="https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git"
+export REPO_MSFT_TREE="git@github.com:microsoft/WSL2-Linux-Kernel.git"
+
+echo BRANCH_MSFT_TREE="$PATH_MSFT_TREE" >> $GITHUB_ENV
+echo PATH_LINUX_TREE="$PATH_LINUX_TREE" >> $GITHUB_ENV
+echo MSFT_TREE_DEPTH="$MSFT_TREE_DEPTH" >> $GITHUB_ENV
