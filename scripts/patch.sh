@@ -1,6 +1,6 @@
 #!/bin/bash
 set -Eeuo pipefail
-# Config variables: PATH_MSFT_TREE, PATH_LINUX_TREE, PRE_PATCH, POST_PATCH, PATH_UCC, MSFT_TREE_DEPTH
+# Config variables: PATH_MSFT_TREE, PATH_LINUX_TREE, PRE_PATCH, POST_PATCH, PATH_UCC, MSFT_TREE_DEPTH, DELIMITER
 # External variables: _SELECTIVE_COMMITS
 IFS=';' read -r -a pre_patch <<< "$PRE_PATCH"
 IFS=';' read -r -a post_patch <<< "$POST_PATCH"
@@ -32,7 +32,7 @@ for commit_hash in "${selective_commits[@]}"; do
     done
     echo "$(git show -s --oneline $commit_hash)" >> "$PATH_UCC"
     echo "$(git diff)" >> "$PATH_UCC"
-    echo "---EOF---" >> "$PATH_UCC"
+    echo $DELIMITER >> "$PATH_UCC"
     git -c core.editor=true cherry-pick --continue
   fi
 done

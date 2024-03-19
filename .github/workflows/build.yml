@@ -1,7 +1,6 @@
 name: Build Kernel
 
 on: 
-  push:
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
@@ -61,6 +60,7 @@ jobs:
         repository: ${{ env.REPO_MSFT_TREE }}
         fetch-depth: ${{ env.MSFT_TREE_DEPTH }}
         path: ${{ env.PATH_MSFT_TREE }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Checkout Linux Kernel Repository
       if: steps.cache.outputs.cache-hit != 'true'
@@ -99,51 +99,42 @@ jobs:
         source ./scripts/summary.sh
 
     - name: Unresolved Confilct Commit Report
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.cache.outputs.cache-hit != 'true' && env._UCC_BODY != ''
       uses: JasonEtco/create-an-issue@v2
       with:
         filename: .github/auto-issue-report.md
       env:
         title: ${{ env._UCC_TITLE }}
         body: ${{ env._UCC_BODY }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
     - name: Unresolved Kernel Option Report
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.cache.outputs.cache-hit != 'true' && env._UKO_BODY != ''
       uses: JasonEtco/create-an-issue@v2
       with:
         filename: .github/auto-issue-report.md
       env:
         title: ${{ env._UKO_TITLE }}
         body: ${{ env._UKO_BODY }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Get current date
       if: steps.cache.outputs.cache-hit != 'true'
       run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-    - name: Create Draft Release
+    - name: Release
       if: steps.cache.outputs.cache-hit != 'true'
-      id: create_release
-      uses: actions/create-release@v1
+      uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ env.CURRENT_DATE }}
-        release_name: ${{ env.VERSION }} ${{ env.CURRENT_DATE }}
-        draft: true
-        prerelease: false
+        name: v${{ env.VERSION }} ${{ env.CURRENT_DATE }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag_name: ${{ env.VERSION }}
+        files: |
+          ${{ env.PATH_LINUX_TREE }}/arch/x86/boot/bzImage
+      env:
+        GITHUB_REPOSITORY: my_gh_org/my_gh_repo
 
-    - uses: actions/upload-release-asset@v1.0.1
-      if: steps.cache.outputs.cache-hit != 'true'
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./${{ env.PATH_LINUX_TREE }}/arch/x86/boot/bzImage
-        asset_name: bzImage
-        asset_content_type: application/octet-stream
-
-    - uses: eregon/publish-release@v1
-      if: steps.cache.outputs.cache-hit != 'true'
-      with:
-        release_id: ${{ steps.create_release.outputs.id }}
-    
-    - name: Update kernel config
+    - name: Update Kernel Config
       if: steps.cache.outputs.cache-hit != 'true'
       uses: EndBug/add-and-commit@v9
       with: 

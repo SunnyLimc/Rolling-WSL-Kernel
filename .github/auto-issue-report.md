@@ -1,5 +1,6 @@
 ---
-title: {{ env.title }}
+title: Generated Report
 labels: auto-report
 ---
+# {{ env.title }}
 {{ env.body }}

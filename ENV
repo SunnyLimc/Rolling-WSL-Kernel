@@ -6,6 +6,7 @@ export PATH_UCC="./commitlog"
 export PATH_UKO="./optionlog"
 export PATH_MSFT_TREE="./upstream-linux-5.15-wsl-repo"
 export PATH_LINUX_TREE="./upstream-linux-stable-repo"
+export DELIMITER=$'\u00a7'
 
 # bash has not yet provided a way to export an array, as a workaround, we use ; as a delimiter for array
 export PRE_PATCH="./zen-kernel-patch" # array

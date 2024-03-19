@@ -1,17 +1,26 @@
 diff --git a/drivers/hv/dxgkrnl/Makefile b/drivers/hv/dxgkrnl/Makefile
-index 89824cda6..f30f61f76 100644
+index 89824cda6..48f6469cf 100644
 --- a/drivers/hv/dxgkrnl/Makefile
 +++ b/drivers/hv/dxgkrnl/Makefile
 @@ -2,4 +2,5 @@
  # Makefile for the hyper-v compute device driver (dxgkrnl).
  
  obj-$(CONFIG_DXGKRNL)	+= dxgkrnl.o
-+ccflags-y += D_MAIN_KERNEL_
++ccflags-y += -D_MAIN_KERNEL_
  dxgkrnl-y := dxgmodule.o hmgr.o misc.o dxgadapter.o ioctl.o dxgvmbus.o dxgprocess.o  dxgsyncfile.o
 diff --git a/drivers/hv/dxgkrnl/dxgmodule.c b/drivers/hv/dxgkrnl/dxgmodule.c
-index 0fafb6167..5992e7176 100644
+index 0fafb6167..8fc542557 100644
 --- a/drivers/hv/dxgkrnl/dxgmodule.c
 +++ b/drivers/hv/dxgkrnl/dxgmodule.c
+@@ -171,7 +171,7 @@ void signal_host_cpu_event(struct dxghostevent *eventhdr)
+ 	}
+ 	if (event->cpu_event) {
+ 		DXG_TRACE("signal cpu event");
+-		eventfd_signal(event->cpu_event, 1);
++		eventfd_signal(event->cpu_event);
+ 		if (event->destroy_after_signal)
+ 			eventfd_ctx_put(event->cpu_event);
+ 	} else {
 @@ -803,7 +803,7 @@ static int dxg_probe_vmbus(struct hv_device *hdev,
  	return ret;
  }
