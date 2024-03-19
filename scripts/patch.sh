@@ -2,10 +2,12 @@
 set -Eeuo pipefail
 # Config variables: PATH_MSFT_TREE, PATH_LINUX_TREE, PRE_PATCH, POST_PATCH, PATH_UCC, MSFT_TREE_DEPTH
 # External variables: _SELECTIVE_COMMITS
-IFS=',' read -r -a selective_commits <<< "$_SELECTIVE_COMMITS"
+IFS=';' read -r -a pre_patch <<< "$PRE_PATCH"
+IFS=';' read -r -a post_patch <<< "$POST_PATCH"
+IFS=';' read -r -a selective_commits <<< "$_SELECTIVE_COMMITS"
 
-git -C "$PATH_MSFT_TREE" ls-files
-git -C "$PATH_LINUX_TREE" ls-files
+git -C "$PATH_MSFT_TREE" ls-files >> /dev/null
+git -C "$PATH_LINUX_TREE" ls-files >> /dev/null
 
 for patch in "${PRE_PATCH[@]}"; do
   echo "Applying pre-patch $patch"
@@ -15,6 +17,9 @@ done
 cd "$PATH_LINUX_TREE"
 git remote add msft "../$PATH_MSFT_TREE"
 git fetch --depth=$MSFT_TREE_DEPTH msft
+
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
 
 for commit_hash in "${selective_commits[@]}"; do
   git cherry-pick -m 1 --allow-empty "$commit_hash"

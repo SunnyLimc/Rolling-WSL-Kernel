@@ -15,4 +15,8 @@ for i in "${!ucc[@]}"; do
 done)"" >> $GITHUB_ENV
 
 echo "_UKO_TITLE="Unresolved Kernel Option"" >> $GITHUB_ENV
-echo "_UKO_BODY=$(cat $PATH_UKO)" >> $GITHUB_ENV
+echo "_UKO_BODY=$(
+  echo ```diff
+  cat $PATH_UKO
+  echo ```
+)" >> $GITHUB_ENV

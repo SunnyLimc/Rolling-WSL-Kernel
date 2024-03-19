@@ -1,22 +1,33 @@
 name: Build Kernel
 
-on: [push]
+on: 
+  push:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # arch: [ arm64, x64 ]
+        # arch: [ arm64, x86 ]
         # variant: [ generic, zen ]
+        arch: [ x86 ]
         variant: [ zen ]
     env:
       # will be initialized in steps
-      MSFT_FETCH_DEPTH: 
-      PATH_MSFT_TREE:
-      VERSION:
+      MSFT_TREE_DEPTH: 
       REPO_LINUX_TREE:
+      REPO_MSFT_TREE:
+      PATH_MSFT_TREE:
       PATH_LINUX_TREE:
+      VERSION:
+      _UCC_BODY:
+      _UCC_TITLE:
+      _UKO_BODY:
+      _UKO_TITLE:
+      CURRENT_DATE:
 
     steps:
     - name: Checkout current repository
@@ -29,7 +40,9 @@ jobs:
     - name: Fetch Latest Version and Patch from Zen Build
       run: |
         source ./ENV
-        ./scripts/zen-kernel.sh
+        source ./scripts/zen-kernel.sh
+      env:
+        _GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Setup Caches
       id: cache
@@ -44,12 +57,11 @@ jobs:
       uses: actions/checkout@v4
       if: steps.cache.outputs.cache-hit != 'true'
       with:
-        repository: 'microsoft/WSL2-Linux-Kernel'
-        fetch-depth: ${{ env.MSFT_FETCH_DEPTH }}
+        repository: ${{ env.REPO_MSFT_TREE }}
+        fetch-depth: ${{ env.MSFT_TREE_DEPTH }}
         path: ${{ env.PATH_MSFT_TREE }}
         
     - name: Checkout Linux Kernel Repository
-      if: steps.cache.outputs.cache-hit != 'true'
       run: |
         git clone --depth 1 --branch v${{ env.VERSION }} ${{ env.REPO_LINUX_TREE }} ${{ env.PATH_LINUX_TREE }}
       
@@ -63,22 +75,68 @@ jobs:
         source ./ENV
         source ./scripts/patch.sh
         
-    - name: Build Kernel
+    - name: Install Required Packages for Build
       run: |
         source ./ENV
         source ./scripts/build-kernel.sh
-      
-    - name: Cache dependencies
+      env: 
+        _ARCH: ${{ matrix.arch }}
+
+    - name: Build Kernel
+      run: |
+        source ./scripts/ubuntu-build-deps.sh
+
+    - name: Cache Summary for Version
       id: cachesummary
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           summary
         key: summary-${{ env.VERSION }}
     
-
     - name: Summary report
       if: steps.cachesummary.outputs.cache-hit != 'true'
       run: |
         source ./ENV
         source ./scripts/summary.sh
+
+    - name: Unresolved Confilct Commit Report
+      if: steps.cachesummary.outputs.cache-hit != 'true'
+      uses: JasonEtco/create-an-issue@v2
+      with:
+        filename: .github/auto-issue-report.md
+      env:
+        title: ${{ env._UCC_TITLE }}
+        body: ${{ env._UCC_BODY }}
+      
+    - name: Unresolved Kernel Option Report
+      if: steps.cachesummary.outputs.cache-hit != 'true'
+      uses: JasonEtco/create-an-issue@v2
+      with:
+        filename: .github/auto-issue-report.md
+      env:
+        title: ${{ env._UKO_TITLE }}
+        body: ${{ env._UKO_BODY }}
+        
+    - name: Get current date
+      run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+    - name: Create Draft Release
+      id: create_release
+      uses: actions/create-release@v1
+      with:
+        tag_name: ${{ env.CURRENT_DATE }}
+        release_name: ${{ env.VERSION }} ${{ env.CURRENT_DATE }}
+        draft: true
+        prerelease: false
+
+    - uses: actions/upload-release-asset@v1.0.1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./${{ env.PATH_LINUX_TREE }}/arch/x86/boot/bzImage
+        asset_name: bzImage
+        asset_content_type: application/octet-stream
+
+    - uses: eregon/publish-release@v1
+      with:
+        release_id: ${{ steps.create_release.outputs.id }}
