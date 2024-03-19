@@ -28,6 +28,7 @@ jobs:
       _UKO_BODY:
       _UKO_TITLE:
       CURRENT_DATE:
+      KCONF_PATH:
 
     steps:
     - name: Checkout current repository
@@ -51,7 +52,7 @@ jobs:
         path: |
           ${{ env.PATH_MSFT_TREE }}
           ${{ env.PATH_LINUX_TREE }}
-        key: kernel-repo-${{ env.VERSION }}
+        key: kernel-${{ env.VERSION }}
 
     - name: Checkout MSFT Kernel Repository
       uses: actions/checkout@v4
@@ -62,46 +63,43 @@ jobs:
         path: ${{ env.PATH_MSFT_TREE }}
         
     - name: Checkout Linux Kernel Repository
+      if: steps.cache.outputs.cache-hit != 'true'
       run: |
         git clone --depth 1 --branch v${{ env.VERSION }} ${{ env.REPO_LINUX_TREE }} ${{ env.PATH_LINUX_TREE }}
       
     - name: Diff Commit From MSFT Kernel
+      if: steps.cache.outputs.cache-hit != 'true'
       run: |
         source ./ENV
         source ./scripts/diff-commit.sh
         
     - name: Patch Linux Kernel Tree
+      if: steps.cache.outputs.cache-hit != 'true'
       run: |
         source ./ENV
         source ./scripts/patch.sh
-        
+
     - name: Install Required Packages for Build
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        source ./scripts/ubuntu-build-deps.sh
+
+    - name: Build Kernel
+      if: steps.cache.outputs.cache-hit != 'true'
       run: |
         source ./ENV
         source ./scripts/build-kernel.sh
       env: 
         _ARCH: ${{ matrix.arch }}
 
-    - name: Build Kernel
-      run: |
-        source ./scripts/ubuntu-build-deps.sh
-
-    - name: Cache Summary for Version
-      id: cachesummary
-      uses: actions/cache@v4
-      with:
-        path: |
-          summary
-        key: summary-${{ env.VERSION }}
-    
     - name: Summary report
-      if: steps.cachesummary.outputs.cache-hit != 'true'
+      if: steps.cache.outputs.cache-hit != 'true'
       run: |
         source ./ENV
         source ./scripts/summary.sh
 
     - name: Unresolved Confilct Commit Report
-      if: steps.cachesummary.outputs.cache-hit != 'true'
+      if: steps.cache.outputs.cache-hit != 'true'
       uses: JasonEtco/create-an-issue@v2
       with:
         filename: .github/auto-issue-report.md
@@ -110,7 +108,7 @@ jobs:
         body: ${{ env._UCC_BODY }}
       
     - name: Unresolved Kernel Option Report
-      if: steps.cachesummary.outputs.cache-hit != 'true'
+      if: steps.cache.outputs.cache-hit != 'true'
       uses: JasonEtco/create-an-issue@v2
       with:
         filename: .github/auto-issue-report.md
@@ -119,9 +117,11 @@ jobs:
         body: ${{ env._UKO_BODY }}
         
     - name: Get current date
+      if: steps.cache.outputs.cache-hit != 'true'
       run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
     - name: Create Draft Release
+      if: steps.cache.outputs.cache-hit != 'true'
       id: create_release
       uses: actions/create-release@v1
       with:
@@ -131,6 +131,7 @@ jobs:
         prerelease: false
 
     - uses: actions/upload-release-asset@v1.0.1
+      if: steps.cache.outputs.cache-hit != 'true'
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./${{ env.PATH_LINUX_TREE }}/arch/x86/boot/bzImage
@@ -138,5 +139,13 @@ jobs:
         asset_content_type: application/octet-stream
 
     - uses: eregon/publish-release@v1
+      if: steps.cache.outputs.cache-hit != 'true'
       with:
         release_id: ${{ steps.create_release.outputs.id }}
+    
+    - name: Update kernel config
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: EndBug/add-and-commit@v9
+      with: 
+        add: ${{ env.KCONF_PATH }}
+        message: 'Automatic update kernel config'

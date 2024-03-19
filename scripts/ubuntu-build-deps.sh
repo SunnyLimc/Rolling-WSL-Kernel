@@ -16,3 +16,6 @@ sudo apt-get install -y \
     libiberty-dev \
     autoconf \
     llvm
+
+sudo apt-get install -y \
+    bc
