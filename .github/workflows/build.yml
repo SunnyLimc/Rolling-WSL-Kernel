@@ -1,6 +1,7 @@
 name: Build Kernel
 
 on: 
+  push:
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
@@ -140,3 +141,5 @@ jobs:
       with: 
         add: ${{ env.KCONF_PATH }}
         message: 'Automatic update kernel config'
+      env: 
+        _ARCH: ${{ matrix.arch }}
