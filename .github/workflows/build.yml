@@ -37,6 +37,8 @@ jobs:
     - name: Setup Required Env
       run: |
         source ./ENV
+      env:
+        _ARCH: ${{ matrix.arch }}
 
     - name: Fetch Latest Version and Patch from Zen Build
       run: |
@@ -45,14 +47,21 @@ jobs:
       env:
         _GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Setup Caches
+    - name: Setup Source Tree Caches
       id: cache
       uses: actions/cache@v4
       with:
         path: |
           ${{ env.PATH_MSFT_TREE }}
           ${{ env.PATH_LINUX_TREE }}
-        key: kernel-${{ env.VERSION }}
+        key: kernel-${{ env.VERSION }}-${{ hashFiles(env.KCONF_PATH) }}
+
+    - name: Setup Commit Caches
+      id: commit-cache
+      uses: actions/cache@v4
+      with:
+        path: "LICENSE"
+        key: conf-${{ env.VERSION }}-${{ hashFiles(env.KCONF_PATH) }}
 
     - name: Checkout MSFT Kernel Repository
       uses: actions/checkout@v4
@@ -69,38 +78,44 @@ jobs:
         git clone --depth 1 --branch v${{ env.VERSION }} ${{ env.REPO_LINUX_TREE }} ${{ env.PATH_LINUX_TREE }}
       
     - name: Diff Commit From MSFT Kernel
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.commit-cache.outputs.cache-hit != 'true'
       run: |
         source ./ENV
         source ./scripts/diff-commit.sh
         
     - name: Patch Linux Kernel Tree
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.commit-cache.outputs.cache-hit != 'true'
       run: |
         source ./ENV
         source ./scripts/patch.sh
 
     - name: Install Required Packages for Build
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.commit-cache.outputs.cache-hit != 'true'
       run: |
         source ./scripts/ubuntu-build-deps.sh
 
     - name: Build Kernel
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.commit-cache.outputs.cache-hit != 'true'
       run: |
         source ./ENV
         source ./scripts/build-kernel.sh
       env: 
         _ARCH: ${{ matrix.arch }}
 
+    - name: Update Commit Caches
+      uses: actions/cache@v4
+      with:
+        path: "LICENSE"
+        key: conf-${{ env.VERSION }}-${{ hashFiles(env.KCONF_PATH) }}
+
     - name: Summary report
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.commit-cache.outputs.cache-hit != 'true'
       run: |
         source ./ENV
         source ./scripts/summary.sh
 
     - name: Unresolved Confilct Commit Report
-      if: steps.cache.outputs.cache-hit != 'true' && env._UCC_BODY != ''
+      if: steps.commit-cache.outputs.cache-hit != 'true' && env._UCC_BODY != ''
       uses: JasonEtco/create-an-issue@v2
       with:
         filename: .github/auto-issue-report.md
@@ -110,7 +125,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
     - name: Unresolved Kernel Option Report
-      if: steps.cache.outputs.cache-hit != 'true' && env._UKO_BODY != ''
+      if: steps.commit-cache.outputs.cache-hit != 'true' && env._UKO_BODY != ''
       uses: JasonEtco/create-an-issue@v2
       with:
         filename: .github/auto-issue-report.md
@@ -120,11 +135,11 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Get current date
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.commit-cache.outputs.cache-hit != 'true'
       run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
     - name: Release
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.commit-cache.outputs.cache-hit != 'true'
       uses: softprops/action-gh-release@v2
       with:
         name: v${{ env.VERSION }} ${{ env.CURRENT_DATE }}
@@ -135,11 +150,16 @@ jobs:
       env:
         GITHUB_REPOSITORY: my_gh_org/my_gh_repo
 
+    - name: Setup Required Env
+      if: steps.commit-cache.outputs.cache-hit != 'true'
+      run: |
+        source ./ENV
+      env:
+        _ARCH: ${{ matrix.arch }}
+
     - name: Update Kernel Config
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.commit-cache.outputs.cache-hit != 'true'
       uses: EndBug/add-and-commit@v9
       with: 
         add: ${{ env.KCONF_PATH }}
         message: 'Automatic update kernel config'
-      env: 
-        _ARCH: ${{ matrix.arch }}
