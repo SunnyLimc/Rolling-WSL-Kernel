@@ -22,50 +22,53 @@ jobs:
       REPO_MSFT_TREE:
       PATH_MSFT_TREE:
       PATH_LINUX_TREE:
+      KCONF_PATH:
       VERSION:
       _UCC_BODY:
       _UCC_TITLE:
       _UKO_BODY:
       _UKO_TITLE:
       CURRENT_DATE:
-      KCONF_PATH:
+      KCONF_HASH:
 
     steps:
     - name: Checkout current repository
       uses: actions/checkout@v4
       
-    - name: Setup Required Env
-      run: |
-        source ./ENV
-      env:
-        _ARCH: ${{ matrix.arch }}
-
     - name: Fetch Latest Version and Patch from Zen Build
       run: |
         source ./ENV
         source ./scripts/zen-kernel.sh
       env:
         _GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Setup Source Tree Caches
-      id: cache
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ env.PATH_MSFT_TREE }}
-          ${{ env.PATH_LINUX_TREE }}
-        key: kernel-${{ env.VERSION }}-${{ hashFiles(env.KCONF_PATH) }}
 
+    - name: Get hash from config file
+      run: |
+        source ./ENV
+        echo "KCONF_HASH=$(md5sum $KCONF_PATH)" >> $GITHUB_ENV
+      env:
+        _ARCH: ${{ matrix.arch }}
+    
     - name: Setup Commit Caches
       id: commit-cache
       uses: actions/cache@v4
       with:
         path: "LICENSE"
-        key: conf-${{ env.VERSION }}-${{ hashFiles(env.KCONF_PATH) }}
+        key: conf-${{ env.VERSION }}-${{ env.KCONF_HASH }}
+
+    - name: Setup Source Tree Caches
+      id: cache
+      uses: actions/cache@v4
+      if: steps.commit-cache.outputs.cache-hit != 'true'
+      with:
+        path: |
+          ${{ env.PATH_MSFT_TREE }}
+          ${{ env.PATH_LINUX_TREE }}
+        key: kernel-${{ env.VERSION }}-${{ env.KCONF_HASH }}
 
     - name: Checkout MSFT Kernel Repository
       uses: actions/checkout@v4
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.commit-cache.outputs.cache-hit != true && steps.cache.outputs.cache-hit != 'true'
       with:
         repository: ${{ env.REPO_MSFT_TREE }}
         fetch-depth: ${{ env.MSFT_TREE_DEPTH }}
@@ -73,7 +76,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Checkout Linux Kernel Repository
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.commit-cache.outputs.cache-hit != true && steps.cache.outputs.cache-hit != 'true'
       run: |
         git clone --depth 1 --branch v${{ env.VERSION }} ${{ env.REPO_LINUX_TREE }} ${{ env.PATH_LINUX_TREE }}
       
@@ -101,12 +104,15 @@ jobs:
         source ./scripts/build-kernel.sh
       env: 
         _ARCH: ${{ matrix.arch }}
+    
+    - name: Get hash from config file
+      run: echo "KCONF_HASH=$(md5sum $KCONF_PATH)" >> $GITHUB_ENV
 
     - name: Update Commit Caches
       uses: actions/cache@v4
       with:
         path: "LICENSE"
-        key: conf-${{ env.VERSION }}-${{ hashFiles(env.KCONF_PATH) }}
+        key: conf-${{ env.VERSION }}-${{ env.KCONF_HASH }}
 
     - name: Summary report
       if: steps.commit-cache.outputs.cache-hit != 'true'
@@ -142,7 +148,7 @@ jobs:
       if: steps.commit-cache.outputs.cache-hit != 'true'
       uses: softprops/action-gh-release@v2
       with:
-        name: v${{ env.VERSION }} ${{ env.CURRENT_DATE }}
+        name: v${{ env.VERSION }}-${{ matrix.variant }}
         token: ${{ secrets.GITHUB_TOKEN }}
         tag_name: ${{ env.VERSION }}
         files: |
