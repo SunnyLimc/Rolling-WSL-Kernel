@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 # config variables: PATH_LINUX_TREE, KCONF_PATH, PATH_UKO
 
-cd "$PATH_LINUX_TREE"
+cd "$PATH_LINUX_TREE-workdir"
 
 set +e
 yes '' | make KCONFIG_CONFIG="../$KCONF_PATH" oldconfig 

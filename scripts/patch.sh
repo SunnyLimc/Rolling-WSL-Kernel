@@ -9,12 +9,14 @@ IFS=';' read -r -a selective_commits <<< "$_SELECTIVE_COMMITS"
 git -C "$PATH_MSFT_TREE" ls-files >> /dev/null
 git -C "$PATH_LINUX_TREE" ls-files >> /dev/null
 
+cp -r "$PATH_LINUX_TREE" "$PATH_LINUX_TREE-workdir"
+
 for patch in "${PRE_PATCH[@]}"; do
   echo "Applying pre-patch $patch"
-  patch -p1 -d "$PATH_LINUX_TREE" < "$patch"
+  patch -p1 -d "$PATH_LINUX_TREE-workdir" < "$patch"
 done
 
-cd "$PATH_LINUX_TREE"
+cd "$PATH_LINUX_TREE-workdir"
 git remote add msft "../$PATH_MSFT_TREE"
 git fetch --depth=$MSFT_TREE_DEPTH msft
 
@@ -40,5 +42,5 @@ cd ".."
 
 for patch in "${POST_PATCH[@]}"; do
   echo "Applying post-patch $patch"
-  patch -p1 -d "$PATH_LINUX_TREE" < "$patch"
+  patch -p1 -d "$PATH_LINUX_TREE-workdir" < "$patch"
 done

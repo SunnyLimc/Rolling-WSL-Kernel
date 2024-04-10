@@ -152,7 +152,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         tag_name: ${{ env.VERSION }}
         files: |
-          ${{ env.PATH_LINUX_TREE }}/arch/x86/boot/bzImage
+          ${{ env.PATH_LINUX_TREE }}-workdir/arch/x86/boot/bzImage
       env:
         GITHUB_REPOSITORY: my_gh_org/my_gh_repo
 
