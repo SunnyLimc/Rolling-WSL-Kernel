@@ -18,4 +18,5 @@ sudo apt-get install -y \
     llvm
 
 sudo apt-get install -y \
-    bc
+    bc \
+    dwarves # pahole, commit #1081f7fefad6999b3fe7506f192774a43fbb5eff
