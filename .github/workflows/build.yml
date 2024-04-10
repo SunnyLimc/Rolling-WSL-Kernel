@@ -64,7 +64,7 @@ jobs:
         path: |
           ${{ env.PATH_MSFT_TREE }}
           ${{ env.PATH_LINUX_TREE }}
-        key: kernel-${{ env.VERSION }}-${{ env.KCONF_HASH }}
+        key: kernel-${{ env.VERSION }}
 
     - name: Checkout MSFT Kernel Repository
       uses: actions/checkout@v4
@@ -168,4 +168,6 @@ jobs:
       uses: EndBug/add-and-commit@v9
       with: 
         add: ${{ env.KCONF_PATH }}
-        message: 'Automatic update kernel config'
+        message: "conf: updated to newly generated kernel config for ${{ env.VERSION }}-${{ matrix.variant }}"
+        committer_name: GitHub Actions
+        committer_email: actions@github.com
