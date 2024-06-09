@@ -1,6 +1,6 @@
 name: Build Kernel
 
-on: 
+on:
   push:
   schedule:
     - cron: '0 0 * * *'
@@ -17,7 +17,7 @@ jobs:
         variant: [ zen ]
     env:
       # will be initialized in steps
-      MSFT_TREE_DEPTH: 
+      MSFT_TREE_DEPTH:
       REPO_LINUX_TREE:
       REPO_MSFT_TREE:
       PATH_MSFT_TREE:
@@ -34,7 +34,7 @@ jobs:
     steps:
     - name: Checkout current repository
       uses: actions/checkout@v4
-      
+
     - name: Fetch Latest Version and Patch from Zen Build
       run: |
         source ./ENV
@@ -48,7 +48,7 @@ jobs:
         echo "KCONF_HASH=$(md5sum $KCONF_PATH)" >> $GITHUB_ENV
       env:
         _ARCH: ${{ matrix.arch }}
-    
+
     - name: Setup Commit Caches
       id: commit-cache
       uses: actions/cache@v4
@@ -68,24 +68,24 @@ jobs:
 
     - name: Checkout MSFT Kernel Repository
       uses: actions/checkout@v4
-      if: steps.commit-cache.outputs.cache-hit != true && steps.cache.outputs.cache-hit != 'true'
+      if: steps.commit-cache.outputs.cache-hit != 'true' && steps.cache.outputs.cache-hit != 'true'
       with:
         repository: ${{ env.REPO_MSFT_TREE }}
         fetch-depth: ${{ env.MSFT_TREE_DEPTH }}
         path: ${{ env.PATH_MSFT_TREE }}
         token: ${{ secrets.GITHUB_TOKEN }}
-        
+
     - name: Checkout Linux Kernel Repository
-      if: steps.commit-cache.outputs.cache-hit != true && steps.cache.outputs.cache-hit != 'true'
+      if: steps.commit-cache.outputs.cache-hit != 'true' && steps.cache.outputs.cache-hit != 'true'
       run: |
         git clone --depth 1 --branch v${{ env.VERSION }} ${{ env.REPO_LINUX_TREE }} ${{ env.PATH_LINUX_TREE }}
-      
+
     - name: Diff Commit From MSFT Kernel
       if: steps.commit-cache.outputs.cache-hit != 'true'
       run: |
         source ./ENV
         source ./scripts/diff-commit.sh
-        
+
     - name: Patch Linux Kernel Tree
       if: steps.commit-cache.outputs.cache-hit != 'true'
       run: |
@@ -102,9 +102,9 @@ jobs:
       run: |
         source ./ENV
         source ./scripts/build-kernel.sh
-      env: 
+      env:
         _ARCH: ${{ matrix.arch }}
-    
+
     - name: Get hash from config file
       run: echo "KCONF_HASH=$(md5sum $KCONF_PATH)" >> $GITHUB_ENV
 
@@ -129,7 +129,7 @@ jobs:
         title: ${{ env._UCC_TITLE }}
         body: ${{ env._UCC_BODY }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
     - name: Unresolved Kernel Option Report
       if: steps.commit-cache.outputs.cache-hit != 'true' && env._UKO_BODY != ''
       uses: JasonEtco/create-an-issue@v2
@@ -139,7 +139,7 @@ jobs:
         title: ${{ env._UKO_TITLE }}
         body: ${{ env._UKO_BODY }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
+
     - name: Get current date
       if: steps.commit-cache.outputs.cache-hit != 'true'
       run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
@@ -166,7 +166,7 @@ jobs:
     - name: Update Kernel Config
       if: steps.commit-cache.outputs.cache-hit != 'true'
       uses: EndBug/add-and-commit@v9
-      with: 
+      with:
         add: ${{ env.KCONF_PATH }}
         message: "conf: updated to newly generated kernel config for ${{ env.VERSION }}-${{ matrix.variant }}"
         committer_name: GitHub Actions
