@@ -5,7 +5,7 @@ set -Eeuo pipefail
 
 found_release=false
 
-for row in $(echo "$(curl -s -H "Authorization: token ${_GITHUB_TOKEN}" "${ZEN_RELEASE_URL}")" | jq -r '.[] | @base64'); do
+for row in $(curl -s -H "Authorization: token ${_GITHUB_TOKEN}" "${ZEN_RELEASE_URL}" | jq -r '.[] | @base64'); do
   _jq() {
     echo "${row}" | base64 --decode | jq -r "${1}"
   }
@@ -16,7 +16,7 @@ for row in $(echo "$(curl -s -H "Authorization: token ${_GITHUB_TOKEN}" "${ZEN_R
       version=$(echo "$name" | grep -oP 'v\K[0-9]+\.[0-9]+(\.[0-9]+)?')
       if [ ! -z "$version" ]; then
         echo "Found valid release: $name with version $version"
-        
+
         asset_url=$(_jq '.assets[] | select(.name | endswith(".zst")) | .browser_download_url')
         if [ ! -z "$asset_url" ]; then
           curl -L -o "${ZEN_PATCH_PATH}.zst" "$asset_url"

@@ -5,8 +5,8 @@ set -Eeuo pipefail
 cd "$PATH_LINUX_TREE-workdir"
 
 set +e
-yes '' | make KCONFIG_CONFIG="../$KCONF_PATH" oldconfig 
+yes '' | make KCONFIG_CONFIG="../$KCONF_PATH" oldconfig
 diff -u "../$KCONF_PATH.old" "../$KCONF_PATH" | grep '^[+-]' >> "../$PATH_UKO"
 set -e
 
-make KCONFIG_CONFIG="../$KCONF_PATH" -j$(nproc)
+make KCONFIG_CONFIG="../$KCONF_PATH" -j"$(nproc)"

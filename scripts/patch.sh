@@ -9,6 +9,10 @@ IFS=';' read -r -a selective_commits <<< "$_SELECTIVE_COMMITS"
 git -C "$PATH_MSFT_TREE" ls-files >> /dev/null
 git -C "$PATH_LINUX_TREE" ls-files >> /dev/null
 
+echo "Setting up git user"
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+
 cp -r "$PATH_LINUX_TREE" "$PATH_LINUX_TREE-workdir"
 
 for patch in "${PRE_PATCH[@]}"; do
@@ -16,14 +20,17 @@ for patch in "${PRE_PATCH[@]}"; do
   patch -p1 -d "$PATH_LINUX_TREE-workdir" < "$patch"
 done
 
+echo "Committing $PATH_LINUX_TREE-workdir"
+git -C "$PATH_LINUX_TREE-workdir" add -A
+git -C "$PATH_LINUX_TREE-workdir" commit -m "pre-patch"
+
+echo "Checking out $PATH_LINUX_TREE-workdir"
 cd "$PATH_LINUX_TREE-workdir"
 git remote add msft "../$PATH_MSFT_TREE"
 git fetch --depth=$MSFT_TREE_DEPTH msft
 
-git config --global user.email "you@example.com"
-git config --global user.name "Your Name"
-
 for commit_hash in "${selective_commits[@]}"; do
+  echo "Applying selective commit $commit_hash"
   git cherry-pick -m 1 --allow-empty "$commit_hash"
   if [ $? -ne 0 ]; then
     echo "Conflict detected on commit '${commit_hash:0:10}'. Try resolving using 'ours' (content from HEAD) strategy for all files."
