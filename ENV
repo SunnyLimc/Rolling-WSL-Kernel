@@ -4,14 +4,14 @@ export ZEN_PATCH_PATH="./zen-kernel-patch"
 
 export PATH_UCC="./commitlog"
 export PATH_UKO="./optionlog"
-export PATH_MSFT_TREE="./upstream-linux-5.15-wsl-repo"
+export PATH_MSFT_TREE="./upstream-linux-6.6-wsl-repo"
 export PATH_LINUX_TREE="./upstream-linux-stable-repo"
 export DELIMITER=$'\u00a7'
 
 # bash has not yet provided a way to export an array, as a workaround, we use ; as a delimiter for array
 export PRE_PATCH="./zen-kernel-patch" # array
 export ACCEPT_PATCH_CMSG="^Merge config/wsl.*;^Merge feature/dxgkrnl.*" # array
-export POST_PATCH="./patch/dxgkrnl.patch" # array
+export POST_PATCH="" # array
 export MSFT_TREE_DEPTH=30
 export KCONF_PATH="$(eval echo config/config-wsl-${_ARCH}.txt)"
 
