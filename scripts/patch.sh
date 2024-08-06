@@ -15,7 +15,7 @@ git config --global user.name "Your Name"
 
 cp -r "$PATH_LINUX_TREE" "$PATH_LINUX_TREE-workdir"
 
-for patch in "${PRE_PATCH[@]}"; do
+for patch in "${pre_patch[@]}"; do
   echo "Applying pre-patch $patch"
   patch -p1 -d "$PATH_LINUX_TREE-workdir" < "$patch"
 done
@@ -47,7 +47,7 @@ for commit_hash in "${selective_commits[@]}"; do
 done
 cd ".."
 
-for patch in "${POST_PATCH[@]}"; do
+for patch in "${post_patch[@]}"; do
   echo "Applying post-patch $patch"
   patch -p1 -d "$PATH_LINUX_TREE-workdir" < "$patch"
 done
